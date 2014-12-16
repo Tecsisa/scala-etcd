@@ -99,7 +99,7 @@ class EtcdSmokeTest extends FunSuite
     }
   }
 
-  test("a list dir should deal with recursivity") {
+  test("a list dir should deal with recursion") {
     Await.ready(for {
       _ <- client.createDir(BaseDirectory + "/Composers")
       _ <- client.createDir(BaseDirectory + "/Artists")
