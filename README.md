@@ -13,7 +13,7 @@ In order to create an instance of this client, just type:
 
 ```
 
-Parameter *port* is optional being used 4001 by default. In scenarios where you have a local etcd service, i.e. in a
+*port* parameter is optional being used 4001 by default. In scenarios where you have a local etcd service, i.e. in a
 CoreOS cluster, you could just type:
 
 ```Scala
