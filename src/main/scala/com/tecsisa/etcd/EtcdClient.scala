@@ -76,7 +76,8 @@ class EtcdClient(conn: String) {
 
   private def processRequest[T <: EtcdResponse : EtcdResponseFormatter](request: EtcdRequest): Future[T] = {
     val execute: Req => Future[T] = { req =>
-      val result = Http(req OK as.String).either
+      //must follow redirects without removing query parameters
+      val result = Http.configure(x => x.setRemoveQueryParamsOnRedirect(false).setFollowRedirects(false))(req OK as.String).either
       Future {
         result() match {
           case Right(content) => implicitly[EtcdResponseFormatter[T]].parseJson(content.asInstanceOf[String])
