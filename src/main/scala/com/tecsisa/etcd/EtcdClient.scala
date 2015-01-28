@@ -77,7 +77,7 @@ class EtcdClient(conn: String) {
   private def processRequest[T <: EtcdResponse : EtcdResponseFormatter](request: EtcdRequest): Future[T] = {
     val execute: Req => Future[T] = { req =>
       //must follow redirects without removing query parameters
-      val result = Http.configure(x => x.setFollowRedirects(true).setRemoveQueryParamsOnRedirect(true))(req OK as.String).either
+      val result = Http.configure(x => x.setFollowRedirects(true).setRemoveQueryParamsOnRedirect(false))(req OK as.String).either
       Future {
         result() match {
           case Right(content) => implicitly[EtcdResponseFormatter[T]].parseJson(content.asInstanceOf[String])
@@ -108,7 +108,7 @@ class EtcdClient(conn: String) {
         val req = if (!request.sorting.getOrElse(false)) baseReq.PUT else baseReq.POST
         execute(req <<? params)
       case Action.UnsetExpiration =>
-        execute((:/(baseUrl) / request.node.key).PUT <<
+        execute((:/(baseUrl) / request.node.key).PUT <<?
           Map("value" -> request.node.value.getOrElse(""),
               "ttl" -> "", "prevExist" -> request.prevExist.getOrElse("false").toString))
     }
