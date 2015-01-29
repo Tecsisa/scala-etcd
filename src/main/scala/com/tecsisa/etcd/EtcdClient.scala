@@ -47,6 +47,9 @@ class EtcdClient(conn: String) {
 
   import EtcdClient._
 
+  private val httpClient = 
+    Http.configure(x => x.setFollowRedirects(true).setRemoveQueryParamsOnRedirect(false))
+
   private val baseUrl = s"$conn/v2/keys"
 
   def createDir(dir: String): Future[EtcdSingleResponse] =
@@ -77,7 +80,7 @@ class EtcdClient(conn: String) {
   private def processRequest[T <: EtcdResponse : EtcdResponseFormatter](request: EtcdRequest): Future[T] = {
     val execute: Req => Future[T] = { req =>
       //must follow redirects without removing query parameters
-      val result = Http.configure(x => x.setFollowRedirects(true).setRemoveQueryParamsOnRedirect(false))(req OK as.String).either
+      val result = httpClient(req OK as.String).either
       Future {
         result() match {
           case Right(content) => implicitly[EtcdResponseFormatter[T]].parseJson(content.asInstanceOf[String])
