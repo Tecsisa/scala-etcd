@@ -24,7 +24,26 @@ CoreOS cluster, you could just type:
 
 ```
 
-## Examples of use
+## Usage
+
+In order to use this library, just add the Tecsisa bintray repository to the resolvers list:
+
+```Scala
+
+  resolvers in ThisBuild += Resolver.url("bintray-tecsisa-repo",
+                                     url("http://dl.bintray.com/tecsisa/maven-bintray-repo"))(Resolver.ivyStylePatterns)
+
+```
+
+And then, just import the dependency:
+
+```Scala
+
+  libraryDependencies += "com.tecsisa" %% "scala-etcd" % "0.0.1"
+
+```
+
+### Examples of use
 
 Please see the [smoke testing] for examples of use.
 
