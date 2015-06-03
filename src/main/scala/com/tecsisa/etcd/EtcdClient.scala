@@ -36,21 +36,23 @@ object EtcdClient {
     val UnsetExpiration = "unsetExpiration"
   }
 
-  private val defaultConn = s"$DefaultEtcdHost:$DefaultEtcdPort"
+  private val defaultConn = s"http://$DefaultEtcdHost:$DefaultEtcdPort"
 
-  def local(): EtcdClient = new EtcdClient(defaultConn)
-  def remote(host: String, port: Int = DefaultEtcdPort) = new EtcdClient(s"$host:$port")
+  def local(): EtcdClient = new EtcdClient(defaultConn, Map())
+  def remote(host: String, port: Int = DefaultEtcdPort, headers: Map[String, String] = Map()) =
+    new EtcdClient(s"http://$host:$port", headers)
 
+  def apply(url:String,headers:Map[String,String] = Map.empty) = new EtcdClient(url,headers)
 }
 
-class EtcdClient(conn: String) {
+class EtcdClient(etcdURL: String, headers: Map[String, String]) {
 
   import EtcdClient._
 
   private val httpClient = 
     Http.configure(x => x.setFollowRedirects(true).setRemoveQueryParamsOnRedirect(false))
 
-  private val baseUrl = s"$conn/v2/keys"
+  private val baseUrl = url(s"$etcdURL/v2/keys")
 
   def createDir(dir: String): Future[EtcdSingleResponse] =
     processRequest[EtcdSingleResponse](EtcdRequest(Action.CreateDir, Node(dir)))
@@ -80,7 +82,7 @@ class EtcdClient(conn: String) {
   private def processRequest[T <: EtcdResponse : EtcdResponseFormatter](request: EtcdRequest): Future[T] = {
     val execute: Req => Future[T] = { req =>
       //must follow redirects without removing query parameters
-      val result = httpClient(req OK as.String).either
+      val result = httpClient(req <:< headers OK as.String).either
       Future {
         result() match {
           case Right(content) => implicitly[EtcdResponseFormatter[T]].parseJson(content.asInstanceOf[String])
@@ -92,26 +94,26 @@ class EtcdClient(conn: String) {
     }
     request.action match {
       case Action.CreateDir =>
-        execute((:/(baseUrl) / request.node.key).PUT <<? Map("dir" -> true.toString))
+        execute((baseUrl / request.node.key).PUT <<? Map("dir" -> true.toString))
       case Action.DeleteDir =>
-        execute((:/(baseUrl) / request.node.key).DELETE <<?
+        execute((baseUrl / request.node.key).DELETE <<?
           Map("recursive" -> request.recursive.toString, "dir" -> true.toString))
       case Action.DeleteKey =>
-        execute((:/(baseUrl) / request.node.key).DELETE)
+        execute((baseUrl / request.node.key).DELETE)
       case Action.Get =>
-        execute((:/(baseUrl) / request.node.key).GET <<? Map("wait" -> request.waiting.toString))
+        execute((baseUrl / request.node.key).GET <<? Map("wait" -> request.waiting.toString))
       case Action.ListDir =>
-        execute((:/(baseUrl) / request.node.key).GET <<?
+        execute((baseUrl / request.node.key).GET <<?
           Map("recursive" -> request.recursive.toString,
               "sorted" -> request.sorting.getOrElse(false).toString))
       case Action.Set =>
         val params: Map[String, String] = Map("value" -> request.node.value.getOrElse("")) ++
-          (request.ttl.map { case ttl => Map("ttl" -> ttl.toString) }).getOrElse(Map.empty[String, String])
-        val baseReq = :/(baseUrl) / request.node.key
+          request.ttl.map { case ttl => Map("ttl" -> ttl.toString) }.getOrElse(Map.empty[String, String])
+        val baseReq = baseUrl / request.node.key
         val req = if (!request.sorting.getOrElse(false)) baseReq.PUT else baseReq.POST
         execute(req <<? params)
       case Action.UnsetExpiration =>
-        execute((:/(baseUrl) / request.node.key).PUT <<?
+        execute((baseUrl / request.node.key).PUT <<?
           Map("value" -> request.node.value.getOrElse(""),
               "ttl" -> "", "prevExist" -> request.prevExist.getOrElse("false").toString))
     }

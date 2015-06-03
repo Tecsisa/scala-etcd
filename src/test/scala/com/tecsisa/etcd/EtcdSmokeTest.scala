@@ -39,6 +39,7 @@ class EtcdSmokeTest extends FunSuite
   implicit val p = PatienceConfig(timeout = timeout)
 
   private val BaseDirectory = "testing"
+  /* private val client = EtcdClient("https://localhost:4001") // if you run etcd with https */
   private val client = EtcdClient.local()
 
   before {
