@@ -1,6 +1,8 @@
 scala-etcd
 ==========
 
+[![Build Status](https://travis-ci.org/Tecsisa/scala-etcd.svg?branch=master)](https://travis-ci.org/Tecsisa/scala-etcd)
+
 A scala client library for [etcd].
 
 It uses [dispatch] to provide asynchronous none blocking HTTP communication with the [etcd v2 API].
